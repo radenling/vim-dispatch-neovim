@@ -39,6 +39,7 @@ function! dispatch#neovim#handle(request) abort
 		" jobstart. See: https://github.com/neovim/neovim/issues/557
 		" Use job id as pid for now.
 		call writefile([l:job_id], a:request.file.'.pid')
+		call writefile([], a:request.file)
 		return 1
 	endif
 endfunction
