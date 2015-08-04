@@ -79,8 +79,12 @@ function! dispatch#neovim#running(pid) abort
 endfunction
 
 function! s:BufferOutput(job_id, data, event) abort
+	" Remove ANSI escape codes
+	let l:lines = map(a:data, 'substitute(v:val, ''\e\[[0-9;]*[a-zA-Z]'', "", "g")')
+
 	" Remove newlines from output since writefile() adds them
 	let l:lines = map(a:data, 'substitute(v:val, ''\r'', "", "g")')
+
 	call writefile(l:lines, self.tempfile, "a")
 endfunction
 
