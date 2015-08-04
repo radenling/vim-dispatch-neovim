@@ -31,7 +31,7 @@ function! dispatch#neovim#handle(request) abort
 					\ 'height': 25,
 					\ 'background': a:request.background,
 					\ 'tempfile': a:request.file,
-					\ 'output': []
+					\ 'output': ''
 					\}
 		let l:job_id = jobstart(cmd, opts)
 
@@ -78,12 +78,31 @@ function! dispatch#neovim#running(pid) abort
 	return !v:shell_error
 endfunction
 
-function! s:BufferOutput(job_id, data, event) abort
-	" Remove ANSI escape codes
-	let l:lines = map(a:data, 'substitute(v:val, ''\e\[[0-9;]*[a-zA-Z]'', "", "g")')
+" Remove newlines and merge lines without newlines
+function! s:FilterNewlines(lines, state) abort
+	let l:lines = []
+	for line in a:lines
+		let l:line_without_newline = substitute(line, '\n\|\r', '', 'g')
+		let a:state.output .= l:line_without_newline
+		if line =~ '\n\|\r'
+			call add(l:lines, a:state.output)
+			let a:state.output = ''
+		endif
+	endfor
+	return l:lines
+endfunction
 
-	" Remove newlines from output since writefile() adds them
-	let l:lines = map(a:data, 'substitute(v:val, ''\r'', "", "g")')
+function! s:BufferOutput(job_id, data, event) abort
+	let l:lines = a:data
+
+	" Remove empty lines
+	let l:lines = filter(l:lines, '!empty(v:val)')
+
+	" Remove ANSI escape codes
+	let l:lines = map(l:lines, 'substitute(v:val, ''\e\[[0-9;]*[a-zA-Z]'', "", "g")')
+
+	" Remove newlines and merge partial lines
+	let l:lines = s:FilterNewlines(l:lines, self)
 
 	call writefile(l:lines, self.tempfile, "a")
 endfunction
