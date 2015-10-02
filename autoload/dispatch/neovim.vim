@@ -33,7 +33,14 @@ function! dispatch#neovim#handle(request) abort
 					\ 'tempfile': a:request.file,
 					\ 'output': ''
 					\}
-		let l:job_id = jobstart(cmd, opts)
+		if bg
+			let l:job_id = jobstart(cmd, opts)
+		else
+			execute 'botright split | enew'
+			let opts.buf_id = bufnr('%')
+			let l:job_id = termopen(cmd, opts)
+			execute 'wincmd p'
+		endif
 
 		" There is currently no way to get the pid in neovim when using
 		" jobstart. See: https://github.com/neovim/neovim/issues/557
@@ -115,5 +122,11 @@ function! s:JobExit(job_id, data, event) abort
 	if !self.background
 		call delete(self.tempfile.'.complete')
 		call delete(self.tempfile)
+
+		" Clean up terminal buffer
+		if has_key(self, 'buf_id')
+			call feedkeys("\<C-\>\<C-n>", 'n')
+			execute 'bd! ' . self.buf_id
+		endif
 	endif
 endfunction
