@@ -14,19 +14,18 @@ neovim it will not do anything.
 
 ### Notes
 
-Foreground builds run as jobs in neovim. There is currently no visual indicator
-for when a job is running. When a foreground job fails, it will open the
-quickfix window, just like the other dispatch handlers.
+Foreground builds run in a small terminal window at the bottom of the current
+tab. If the foreground job fails, the quickfix window will open showing the
+errors.
 
-Background builds work like foreground builds but without opening the quickfix
-window afterwards. Use `:Copen` to open the quickfix window for background
-builds.
+Background builds will run as jobs in neovim, which means that they won't open a
+terminal window, nor will they open the quickfix window afterwards. Use `:Copen`
+to open the quickfix window for background builds.
 
 `:Start` and `:Start!` uses vim tabs and the built-in terminal emulator.
 
 ## Todo
 
-* Add statusline indicator for when a job is running
 * Test on other platforms than linux
 
 [dispatch]: https://github.com/tpope/vim-dispatch
