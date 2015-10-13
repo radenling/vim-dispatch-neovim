@@ -168,5 +168,6 @@ function! s:JobExit(job_id, data, event) abort
 			execute 'silent bd! ' . self.buf_id
 		endif
 	endif
+	call writefile([a:data], self.tempfile . '.complete')
 	call dispatch#complete(self.tempfile)
 endfunction
