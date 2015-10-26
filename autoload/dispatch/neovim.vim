@@ -155,7 +155,7 @@ function! s:JobExit(job_id, data, event) abort
 	if s:UsesTerminal(self.request) && s:NeedsOutput(self.request)
 		let buffer = bufnr('%')
 		execute 'silent keepalt buffer ' . self.buf_id
-		execute 'silent write '. self.tempfile
+		execute 'silent keepalt write '. self.tempfile
 		execute 'silent keepalt buffer ' . buffer
 	endif
 
