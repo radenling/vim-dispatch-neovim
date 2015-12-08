@@ -56,7 +56,7 @@ endfunction
 
 function! dispatch#neovim#handle(request) abort
 	let action = a:request.action
-	let cmd = a:request.command
+	let cmd = a:request.expanded
 	let bg = a:request.background
 	let opts = s:CommandOptions(a:request)
 	if s:UsesTerminal(a:request)
