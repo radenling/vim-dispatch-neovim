@@ -153,10 +153,7 @@ endfunction
 
 function! s:JobExit(job_id, data, event) abort
 	if s:UsesTerminal(self.request) && s:NeedsOutput(self.request)
-		let buffer = bufnr('%')
-		execute 'silent keepalt buffer ' . self.buf_id
-		execute 'silent keepalt write '. self.tempfile
-		execute 'silent keepalt buffer ' . buffer
+		call writefile(getbufline(self.buf_id, 1, '$'), self.tempfile)
 	endif
 
 	" Clean up terminal window if visible
