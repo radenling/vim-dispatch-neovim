@@ -139,15 +139,9 @@ endfunction
 
 function! s:BufferOutput(job_id, data, event) abort
 	let l:lines = a:data
-
-	" Remove empty lines
 	let l:lines = filter(l:lines, '!empty(v:val)')
-
 	let l:lines = s:RemoveANSI(l:lines)
-
-	" Remove newlines and merge partial lines
 	let l:lines = s:FilterNewlines(l:lines, self)
-
 	call writefile(l:lines, self.tempfile, "a")
 endfunction
 
