@@ -137,7 +137,7 @@ function! s:RemoveANSI(lines)
 	return map(a:lines, 'substitute(v:val, ''\e\[[0-9;]*[a-zA-Z]'', "", "g")')
 endfunction
 
-function! s:BufferOutput(job_id, data, event) abort
+function! s:BufferOutput(job_id, data, event) dict abort
 	let l:lines = a:data
 	let l:lines = filter(l:lines, '!empty(v:val)')
 	let l:lines = s:RemoveANSI(l:lines)
@@ -145,7 +145,7 @@ function! s:BufferOutput(job_id, data, event) abort
 	call writefile(l:lines, self.tempfile, "a")
 endfunction
 
-function! s:JobExit(job_id, data, event) abort
+function! s:JobExit(job_id, data, event) dict abort
 	if s:UsesTerminal(self.request) && s:NeedsOutput(self.request)
 		call writefile(getbufline(self.buf_id, 1, '$'), self.tempfile)
 	endif
