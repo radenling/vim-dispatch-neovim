@@ -55,17 +55,46 @@ function! s:SaveCurrentBufferPid(request)
 endfunction
 
 function! dispatch#neovim#handle(request) abort
+	echom "DISPATCH-NEOVIM"
+	if exists('g:tmux_session')
+		return ''
+	endif
 	let action = a:request.action
 	let cmd = a:request.expanded
 	let bg = a:request.background
 	let opts = s:CommandOptions(a:request)
 	if s:UsesTerminal(a:request)
+		" let cmd = 'env PYTHONUNBUFFERED=1 '.cmd.' | tee '.shellescape(opts.tempfile)
+
+		" HACK: use 'source' to work around control characters not working in pdb.
+		" XXX: needs different order on FreeBSD/MacOS?!
+		" Source: http://unix.stackexchange.com/a/61833/1920
+		" let cmd = 'env PYTHONUNBUFFERED=1 script -q -c '.shellescape(cmd).' /dev/null | tee '.shellescape(opts.tempfile)
+		" Works
+		" let cmd = cmd . ' | tee '.shellescape(opts.tempfile)
+		" let cmd = 'script --return -q -c '.shellescape(cmd).' '.shellescape(opts.tempfile)
+
+		" let cmd = 'script --return -q -c '.shellescape(cmd).' /dev/null | tee '.shellescape(opts.tempfile)
+		" let cmd = 'env PYTHONUNBUFFERED=1 '.cmd
+
 		if s:NeedsOutput(a:request)
-			execute 'botright split | enew | resize 10'
+			" Setup advanced redirection to get the exit code of cmd, when using tee.
+			" Source: http://stackoverflow.com/a/16530815/15690
+			" NOTE: using 'script' makes this a tty!
+			let cmd = '(((('.cmd.' 2>&1; echo $? >&3) | tee '.shellescape(opts.tempfile).' >&4) 3>&1) | (read xs; exit $xs)) 4>&1 2>&1'
+
+			let prev_win = exists('*win_getid') ? win_getid() : winnr()
+			" 1 does not work?!  errorlist is empty then?!
+			execute 'botright split | enew | resize 2'
 			let opts.buf_id = bufnr('%')
 			call termopen(cmd, opts)
 			call s:SaveCurrentBufferPid(a:request)
-			execute 'wincmd p'
+			" Go to prev window.
+			if exists('*win_getid')
+				call win_gotoid(prev_win)
+			else
+				exe prev_win.'wincmd w'
+			endif
 		else
 			execute 'tabnew'
 			call termopen(cmd, opts)
@@ -147,19 +176,18 @@ endfunction
 
 function! s:JobExit(job_id, data, event) dict abort
 	if s:UsesTerminal(self.request) && s:NeedsOutput(self.request)
-		call writefile(getbufline(self.buf_id, 1, '$'), self.tempfile)
+		" echom "buflines" string(getbufline(self.buf_id, 1, '$'))
+		" call writefile(getbufline(self.buf_id, 1, '$'), self.tempfile)
+
+		" Replace \r coming from script(?); | sed "s/\r\$//"
+		let lines = readfile(self.tempfile)
+		let lines = map(lines, 'substitute(v:val, "\r$", "", "")')
+		call writefile(lines, self.tempfile)
 	endif
 
 	" Clean up terminal window if visible
 	if !self.background
-		let term_win = bufwinnr(self.buf_id)
-		if term_win != -1
-			let cur_win = winnr()
-			execute term_win . ' wincmd w'
-			call feedkeys("\<C-\>\<C-n>", 'n')
-			execute cur_win . ' wincmd w'
-			execute 'silent bd! ' . self.buf_id
-		endif
+		execute 'silent bd! ' . self.buf_id
 	endif
 	call writefile([a:data], self.tempfile . '.complete')
 	call dispatch#complete(self.tempfile)
