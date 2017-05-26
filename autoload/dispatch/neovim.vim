@@ -105,14 +105,21 @@ endfunction
 function! dispatch#neovim#activate(pid) abort
 	let l:buf = s:FindBufferByPID(a:pid)
 	if buf > 0
+        " Look for the buffer among the open tabs and switch to its window if
+        " it's found
 		for t in range(1, tabpagenr('$'))
 			if index(tabpagebuflist(t), l:buf) != -1
-				" When we find the buffer, switch to the right tab and window
 				execute 'normal! '.t.'gt'
 				execute bufwinnr(l:buf).'wincmd w'
 				return 1
 			endif
 		endfor
+
+        " If the buffer isn't displayed in any window, open a new tab and load
+        " the buffer into it
+        execute 'tabnew'
+        execute 'buffer ' . l:buf
+        return 1
 	else
 		" Program was not found among the buffers so nothing to activate
 		return 0
