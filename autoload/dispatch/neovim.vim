@@ -84,8 +84,19 @@ function! dispatch#neovim#handle(request) abort
 			let cmd = '(((('.cmd.' 2>&1; echo $? >&3) | tee '.shellescape(opts.tempfile).' >&4) 3>&1) | (read xs; exit $xs)) 4>&1 2>&1'
 
 			let prev_win = exists('*win_getid') ? win_getid() : winnr()
+
 			" 1 does not work?!  errorlist is empty then?!
-			execute 'botright split | enew | resize 2'
+                        let initial_height = 2
+			execute 'botright split | enew | resize '.initial_height
+
+                        " Automatically resize terminal window and enter
+                        " insert mode on WinEnter.  This is especially meant
+                        " to handle having a debugger prompt waiting there.
+                        augroup dispatch_neovim
+                          exe printf('autocmd! WinEnter <buffer> if winheight(0) == %d | exe "resize ".min([&lines/2, line("$")]) | startinsert | endif', initial_height)
+                        augroup END
+
+                        let b:dispatch_neovim = 1
 			let opts.buf_id = bufnr('%')
 			call termopen(cmd, opts)
 			call s:SaveCurrentBufferPid(a:request)
